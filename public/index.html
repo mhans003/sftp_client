@@ -1,0 +1,43 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFTP File Downloader</title>
+</head>
+<body>
+    <h1>SFTP File Downloader</h1>
+    <form id="fileForm" action="/download" method="post">
+        <label for="fileList">Enter file/folder names:</label><br>
+        <textarea id="fileList" name="fileList" rows="4" cols="50"></textarea><br>
+        <button type="submit">Download Files</button>
+    </form>
+    <div id="progressMessage"></div>
+
+    <script>
+        // Intercept form submission to handle response
+        document.getElementById("fileForm").addEventListener("submit", function(event) {
+            event.preventDefault(); // Prevent default form submission
+            const fileList = document.getElementById("fileList").value; // Get file list from textarea
+            fetch("/download", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ fileList })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update the progress message in the DOM
+                document.getElementById("progressMessage").innerText = data.message;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById("progressMessage").innerText = "Error occurred.";
+            });
+        });
+    </script>
+</body>
+</html>
+
