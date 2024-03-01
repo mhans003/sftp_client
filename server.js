@@ -1,11 +1,20 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+const fs = require('fs');
+const readline = require('readline');
 
 let Client = require('ssh2-sftp-client');
+const { Console } = require('console');
 let prefix = "/public_html";
 
 require('dotenv').config();
+
+//Generate prompt
+const r1 = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -20,7 +29,30 @@ app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-//Handle form submission
+//Run from file if FILEPATH has value
+if(process.env.FILEPATH && process.env.FILEPATH !== '') {
+    console.log(`FILEPATH set to ${process.env.FILEPATH}. Proceeding will read the list of files/folders from input/${process.env.FILEPATH} and download them to the downloads folder.`);
+    promptUser();
+} else {
+    console.log(`FILEPATH variable not set in .env file. Provide a value for FILEPATH, OR open localhost:${PORT} and input list of files/folders to use /download API endpoint.`);
+}
+
+function promptUser() {
+    r1.question('PROCEED? (Y/N)', (answer) => {
+        if(answer.toUpperCase() === 'Y') {
+            //Initiate program from file if user affirms
+            getDataFromFile();
+        } else if(answer.toUpperCase() === 'N') {
+            console.log("Ending Program");
+            process.exit(0);
+        } else {
+            console.log("Invalid input. Try again.");
+            promptUser();
+        }
+    });
+}
+
+//Handle form submission from browser
 app.post('/download', async (req, res) => {
     // Trim whitespace from each string in the array
     const trimmedFileListArray = processInput(req.body.fileList);
@@ -34,6 +66,28 @@ app.post('/download', async (req, res) => {
         res.status(500).json({ error: 'Failed to download files.' });
     }
 });
+
+//Process the data in the local file in FILEPATH
+function getDataFromFile() {
+    try {
+        const data = fs.readFileSync(`input/${process.env.FILEPATH}`).toString('utf-8');
+        const trimmedFileListArray = processInput(data);
+        //If successful, download the listed files in the local file
+        runFromFile(trimmedFileListArray);
+    } catch(err) {
+        console.error(`Error while reading file ${process.env.FILEPATH}: ${err}`);
+    }
+}
+
+async function runFromFile(files) {
+    try {
+        await manageConnection(files); 
+
+        console.log('Files downloaded successfully.')
+    } catch (error) {
+        console.error(`Failed to download files: ${error}`);
+    }
+}
 
 function processInput(fileList) {
     //Add Validation to filter out invalid paths
