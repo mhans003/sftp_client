@@ -10,13 +10,13 @@ const config = require('./config');
 
 let prefix = "/public_html";
 
-//Generate prompt
-const r1 = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
 function promptUser() {
+    //Generate prompt
+    const r1 = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    
     r1.question('PROCEED? (Y/N)', (answer) => {
         if(answer.toUpperCase() === 'Y') {
             //Initiate program from file if user affirms
