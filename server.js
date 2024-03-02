@@ -8,6 +8,7 @@ let Client = require('ssh2-sftp-client');
 let prefix = "/public_html";
 
 const { processInput, initLogs, closeLogs, writeToLog } = require('./utils');
+const config = require('./config');
 
 require('dotenv').config();
 
@@ -30,12 +31,12 @@ app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-//Run from file if FILEPATH has value
-if(process.env.FILEPATH && process.env.FILEPATH !== '') {
-    console.log(`FILEPATH set to ${process.env.FILEPATH}. Proceeding will read the list of files/folders from input/${process.env.FILEPATH} and download them to the downloads folder.`);
+//Run from file if inputFilePath has value
+if(config.inputFilePath && config.inputFilePath !== '') {
+    console.log(`inputFilePath set to ${config.inputFilePath}. Proceeding will read the list of files/folders from input/${config.inputFilePath} and download them to the downloads folder.`);
     promptUser();
 } else {
-    console.log(`FILEPATH variable not set in .env file. Provide a value for FILEPATH, OR open localhost:${PORT} and input list of files/folders to use /download API endpoint.`);
+    console.log(`inputFilePath variable not set in config file. Provide a value for inputFilePath, OR open localhost:${PORT} and input list of files/folders to use /download API endpoint.`);
 }
 
 //Handle form submission from browser
@@ -68,15 +69,15 @@ function promptUser() {
     });
 }
 
-//Process the data in the local file in FILEPATH
+//Process the data in the local file in inputFilePath
 function getDataFromFile() {
     try {
-        const data = fs.readFileSync(`input/${process.env.FILEPATH}`).toString('utf-8');
+        const data = fs.readFileSync(`input/${config.inputFilePath}`).toString('utf-8');
         const trimmedFileListArray = processInput(data);
         //If successful, download the listed files in the local file
         runFromFile(trimmedFileListArray);
     } catch(err) {
-        console.error(`Error while reading file ${process.env.FILEPATH}: ${err}`);
+        console.error(`Error while reading file ${config.inputFilePath}: ${err}`);
     }
 }
 
@@ -120,8 +121,6 @@ async function manageItems(fileList, sftp) {
     // Iterate over the list of files
 
     initLogs();
-
-    console.log(fileList);
 
     for (const filename of fileList) {
         //Append FTP prefix to relative path
