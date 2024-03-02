@@ -8,8 +8,6 @@ const readline = require('readline');
 const { processInput, initLogs, closeLogs, writeToLog } = require('./utils');
 const config = require('./config');
 
-let prefix = "/public_html";
-
 function promptUser() {
     //Generate prompt
     const r1 = readline.createInterface({
@@ -86,7 +84,7 @@ async function manageItems(fileList, sftp) {
 
     for (const filename of fileList) {
         //Append FTP prefix to relative path
-        const fullPath = prefix + filename;
+        const fullPath = config.ftpPrefix + filename;
 
         try {
             // Get the file information (e.g., file type)
