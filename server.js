@@ -5,11 +5,9 @@ const fs = require('fs');
 const readline = require('readline');
 
 let Client = require('ssh2-sftp-client');
-const { Console } = require('console');
 let prefix = "/public_html";
 
-const errorOutputFile = 'output/error.txt';
-const successOutputFile = 'output/success.txt';
+const { processInput, initLogs, closeLogs, writeToLog } = require('./utils');
 
 require('dotenv').config();
 
@@ -40,21 +38,6 @@ if(process.env.FILEPATH && process.env.FILEPATH !== '') {
     console.log(`FILEPATH variable not set in .env file. Provide a value for FILEPATH, OR open localhost:${PORT} and input list of files/folders to use /download API endpoint.`);
 }
 
-function promptUser() {
-    r1.question('PROCEED? (Y/N)', (answer) => {
-        if(answer.toUpperCase() === 'Y') {
-            //Initiate program from file if user affirms
-            getDataFromFile();
-        } else if(answer.toUpperCase() === 'N') {
-            console.log("Ending Program");
-            process.exit(0);
-        } else {
-            console.log("Invalid input. Try again.");
-            promptUser();
-        }
-    });
-}
-
 //Handle form submission from browser
 app.post('/download', async (req, res) => {
     // Trim whitespace from each string in the array
@@ -69,6 +52,21 @@ app.post('/download', async (req, res) => {
         res.status(500).json({ error: 'Failed to download files.' });
     }
 });
+
+function promptUser() {
+    r1.question('PROCEED? (Y/N)', (answer) => {
+        if(answer.toUpperCase() === 'Y') {
+            //Initiate program from file if user affirms
+            getDataFromFile();
+        } else if(answer.toUpperCase() === 'N') {
+            console.log("Ending Program");
+            process.exit(0);
+        } else {
+            console.log("Invalid input. Try again.");
+            promptUser();
+        }
+    });
+}
 
 //Process the data in the local file in FILEPATH
 function getDataFromFile() {
@@ -90,14 +88,6 @@ async function runFromFile(files) {
     } catch (error) {
         console.error(`Failed to download files: ${error}`);
     }
-}
-
-function processInput(fileList) {
-    //Add Validation to filter out invalid paths
-    //--
-
-    const fileListArray = fileList.split('\n');
-    return fileListArray.map(item => item.trim());
 }
 
 //Function to retrieve files/folders
@@ -179,41 +169,5 @@ async function downloadFolder(folderPath, sftp) {
     writeToLog(`Directory "${folderPath}" downloaded successfully to "${localDir}"`, false);
 }
 
-function initLogs() {
-    const currentTime = getTime();
 
-    writeToLog(`Successful downloads - ${currentTime}\n-----`, false);
-    writeToLog(`Download Errors - ${currentTime}\n-----`, true);
-}
-
-function getTime() {
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const day = now.getDate();
-    const year = now.getFullYear();
-    let hours = now.getHours();
-    const minutes = now.getMinutes();
-    const ampm = hours >= 12 ? 'pm' : 'am';
-
-    //Convert hours to 12-hour format
-    hours = hours % 12;
-    hours = hours? hours: 12; 
-
-    //Prevent single digit
-    const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
-
-    return `${month}/${day}/${year} ${hours}:${formattedMinutes} ${ampm}`;
-}
-
-function closeLogs() {
-    writeToLog(`-----\n\n`, true);
-    writeToLog(`-----\n\n`, false);
-}
-
-function writeToLog(message, isError) {
-    const outputFile = isError ? errorOutputFile : successOutputFile;
-    fs.appendFileSync(outputFile, `${message}\n`, (err) => {
-        if(err) console.error(`Error writing to output file: ${err}`);
-    });
-}
 
