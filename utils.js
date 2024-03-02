@@ -1,7 +1,8 @@
+//Utility Functions
+
 const fs = require('fs');
 
-const errorOutputFile = 'output/error.txt';
-const successOutputFile = 'output/success.txt';
+const config = require('./config');
 
 function processInput(fileList) {
     //Add Validation to filter out invalid paths
@@ -43,7 +44,7 @@ function closeLogs() {
 }
 
 function writeToLog(message, isError) {
-    const outputFile = isError ? errorOutputFile : successOutputFile;
+    const outputFile = isError ? config.errorOutputFile : config.successOutputFile;
     fs.appendFileSync(outputFile, `${message}\n`, (err) => {
         if(err) console.error(`Error writing to output file: ${err}`);
     });

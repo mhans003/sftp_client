@@ -21,7 +21,7 @@ app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-//Run from file if inputFilePath has value
+//Run from input file if inputFilePath has value in config.js
 if(config.inputFilePath && config.inputFilePath !== '') {
     console.log(`inputFilePath set to ${config.inputFilePath}. Proceeding will read the list of files/folders from input/${config.inputFilePath} and download them to the downloads folder.`);
     promptUser();
@@ -29,7 +29,7 @@ if(config.inputFilePath && config.inputFilePath !== '') {
     console.log(`inputFilePath variable not set in config file. Provide a value for inputFilePath, OR open localhost:${PORT} and input list of files/folders to use /download API endpoint.`);
 }
 
-//Handle form submission from browser
+//Route to handle form submission from browser instead of input file.
 app.post('/download', async (req, res) => {
     // Trim whitespace from each string in the array
     const trimmedFileListArray = processInput(req.body.fileList);
