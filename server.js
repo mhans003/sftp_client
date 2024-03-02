@@ -8,6 +8,9 @@ let Client = require('ssh2-sftp-client');
 const { Console } = require('console');
 let prefix = "/public_html";
 
+const errorOutputFile = 'output/error.txt';
+const successOutputFile = 'output/success.txt';
+
 require('dotenv').config();
 
 //Generate prompt
@@ -60,7 +63,7 @@ app.post('/download', async (req, res) => {
     try {
         await manageConnection(trimmedFileListArray); // Use await keyword here
 
-        res.json({ message: 'Files downloaded successfully.' });
+        res.json({ message: 'Files downloaded successfully. See output logs for details.' });
     } catch (error) {
         // Respond with an error message
         res.status(500).json({ error: 'Failed to download files.' });
@@ -83,7 +86,7 @@ async function runFromFile(files) {
     try {
         await manageConnection(files); 
 
-        console.log('Files downloaded successfully.')
+        console.log('Files downloaded successfully. See output logs for details.')
     } catch (error) {
         console.error(`Failed to download files: ${error}`);
     }
@@ -125,6 +128,11 @@ async function manageConnection(fileList) {
 
 async function manageItems(fileList, sftp) {
     // Iterate over the list of files
+
+    initLogs();
+
+    console.log(fileList);
+
     for (const filename of fileList) {
         //Append FTP prefix to relative path
         const fullPath = prefix + filename;
@@ -142,8 +150,11 @@ async function manageItems(fileList, sftp) {
             }
         } catch (error) {
             console.error(`Failed to download "${fullPath}": ${error.message}`);
+            writeToLog(`Failed to download "${fullPath}": ${error.message}`, true);
         }
     }
+
+    closeLogs();
 }
 
 async function downloadFile(filePath, sftp) {
@@ -154,6 +165,7 @@ async function downloadFile(filePath, sftp) {
      await sftp.fastGet(filePath, localFile);
 
      console.log(`File "${filePath}" downloaded successfully to "${localFile}"`);
+     writeToLog(`File "${filePath}" downloaded successfully to "${localFile}"`, false);
 }
 
 async function downloadFolder(folderPath, sftp) {
@@ -164,5 +176,44 @@ async function downloadFolder(folderPath, sftp) {
     await sftp.downloadDir(folderPath, localDir);
 
     console.log(`Directory "${folderPath}" downloaded successfully to "${localDir}"`);
+    writeToLog(`Directory "${folderPath}" downloaded successfully to "${localDir}"`, false);
+}
+
+function initLogs() {
+    const currentTime = getTime();
+
+    writeToLog(`Successful downloads - ${currentTime}\n-----`, false);
+    writeToLog(`Download Errors - ${currentTime}\n-----`, true);
+}
+
+function getTime() {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const year = now.getFullYear();
+    let hours = now.getHours();
+    const minutes = now.getMinutes();
+    const ampm = hours >= 12 ? 'pm' : 'am';
+
+    //Convert hours to 12-hour format
+    hours = hours % 12;
+    hours = hours? hours: 12; 
+
+    //Prevent single digit
+    const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+
+    return `${month}/${day}/${year} ${hours}:${formattedMinutes} ${ampm}`;
+}
+
+function closeLogs() {
+    writeToLog(`-----\n\n`, true);
+    writeToLog(`-----\n\n`, false);
+}
+
+function writeToLog(message, isError) {
+    const outputFile = isError ? errorOutputFile : successOutputFile;
+    fs.appendFileSync(outputFile, `${message}\n`, (err) => {
+        if(err) console.error(`Error writing to output file: ${err}`);
+    });
 }
 
