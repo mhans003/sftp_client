@@ -21,7 +21,7 @@
             <label for="fileList" class="form-label">Enter file/folder names:</label><br>
             <textarea id="fileList" class="form-control" name="fileList" rows="4" cols="50"></textarea><br>
           </div>
-          <button class="btn btn-primary" type="submit">Download Files</button>
+          <button class="btn btn-primary" type="submit" id="submitButton">Download Files</button>
         </form>
       </div>
     </div>
@@ -37,6 +37,7 @@
         // Intercept form submission to handle response
         document.getElementById("fileForm").addEventListener("submit", function(event) {
             event.preventDefault(); // Prevent default form submission
+            document.getElementById("submitButton").disabled = true;
             const fileList = document.getElementById("fileList").value; // Get file list from textarea
             fetch("/download", {
                 method: "POST",
